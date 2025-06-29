@@ -1,0 +1,250 @@
+<!-- ... existing code ... -->
+<head>
+    <!-- 设置页面基本元信息 -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!-- 网页标题：实时文字输入与展示界面 -->
+    <title>实时文字输入与展示界面</title>
+    <style>
+        /* 页面整体样式：黑色背景、白色文字、垂直居中布局 */
+        body {
+            /* background-color: black; */
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* 背景切换开关样式 */
+        .theme-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 20px;
+            background-color: #444;
+            border-radius: 10px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            transition: background-color 0.3s;
+        }
+
+        .theme-toggle:checked {
+            background-color: #aaa;
+        }
+
+        .theme-toggle::before {
+            content: '';
+            display: block;
+            width: 16px;
+            height: 16px;
+            margin: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .theme-toggle:checked::before {
+            transform: translateX(20px);
+            background-color: black;
+        }
+
+        /* 文字展示区域样式 */
+        #textDisplay {
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+            min-height: 48px;
+            white-space: pre-line;
+        }
+
+        /* 每个文字片段的样式，用于实现多彩效果 */
+        .colorful-text {
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        /* 输入框样式：深色背景、圆角边框、内边距和阴影效果 */
+        textarea {
+            width: 90%;
+            max-width: 500px;
+            height: 100px;
+            font-size: 16px;
+            padding: 10px;
+            resize: none;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+            background-color: #222;
+            color: white;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* 倒计时文本样式 */
+        #timer {
+            font-size: 18px;
+            margin-top: 10px;
+            color: gray;
+            transition: color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景主题切换开关 -->
+    <input type="checkbox" id="themeToggle" class="theme-toggle" />
+
+    <!-- 展示用户输入的文字 -->
+    <div id="textDisplay"></div>
+    <!-- 用户输入框 -->
+    <textarea id="textInput" placeholder="输入文字...（按回车可换行）"></textarea>
+    <!-- 倒计时提示 -->
+    <div id="timer">倒计时：-- s</div>
+
+    <script>
+        // 获取 DOM 元素
+        const textInput = document.getElementById('textInput');
+        const textDisplay = document.getElementById('textDisplay');
+        const timerDisplay = document.getElementById('timer');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // 定义颜色数组，用于给文字添加多彩效果
+        const colors = ["#D4AF37", "#005F5F", "#191970", "#800020", "#9932CC", "#4A4A4A", "#0047AB", "#B87333", "#008080", "#8B008B"];
+
+        // 倒计时和延时操作变量
+        let countdown;
+        let timeoutId;
+        let timeout = 10;
+
+        /**
+         * 根据背景色计算出适合阅读的前景色（黑或白）
+         * @param {string} background - 背景色值（十六进制或 RGB）
+         * @returns {string} 可读性高的前景色
+         */
+        function getReadableColor(background) {
+            let r, g, b;
+
+            if (background.startsWith('#')) {
+                const hex = background.slice(1);
+                r = parseInt(hex.substr(0, 2), 16);
+                g = parseInt(hex.substr(2, 2), 16);
+                b = parseInt(hex.substr(4, 2), 16);
+            } else if (background.startsWith('rgb')) {
+                const matches = background.match(/(\d+)/g);
+                r = parseInt(matches[0]);
+                g = parseInt(matches[1]);
+                b = parseInt(matches[2]);
+            }
+
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 128 ? '#000000' : '#ffffff';
+        }
+
+        /**
+         * 切换页面主题背景色
+         */
+        function toggleTheme(isDark) {
+            if (isDark) {
+                document.body.style.backgroundColor = '#282C34';
+                document.body.style.color = 'white';
+                textInput.style.backgroundColor = '#222';
+                textInput.style.color = 'white';
+                timerDisplay.style.color = 'gray';
+            } else {
+                document.body.style.backgroundColor = 'white';
+                document.body.style.color = 'black';
+                textInput.style.backgroundColor = '#f0f0f0';
+                textInput.style.color = 'black';
+                timerDisplay.style.color = 'darkgray';
+            }
+        }
+
+        /**
+         * 启动倒计时并更新页面上的倒计时文本
+         */
+        function startCountdown() {
+            clearInterval(countdown);
+            countdown = setInterval(() => {
+                timerDisplay.textContent = `倒计时：${timeout}s`;
+                timeout--;
+                if (timeout < 0) {
+                    clearInterval(countdown);
+                    textInput.value = '';
+                    textDisplay.innerHTML = '';
+                    timerDisplay.textContent = '倒计时：-- s';
+                }
+            }, 1000);
+        }
+
+        /**
+         * 监听输入事件，处理文本内容并更新展示区
+         */
+        textInput.addEventListener('input', () => {
+            const inputValue = textInput.value;
+
+            textDisplay.innerHTML = '';
+
+            // 定义需要识别的分隔符
+            const separators = ['。', '？', '！', '\n'];
+
+            // 创建正则表达式以匹配这些分隔符
+            const regex = new RegExp(`([${separators.map(s => `\\u${s.charCodeAt(0).toString(16).padStart(4, '0')}`).join('')}])`, 'g');
+
+            // 分割输入文本
+            const parts = inputValue.split(regex);
+
+            // 获取当前页面背景色并计算出合适的文本颜色
+            const bgColor = window.getComputedStyle(document.body).backgroundColor;
+            const textColor = getReadableColor(bgColor);
+
+            let colorIndex = 0;
+
+            // 遍历分割后的文本部分并创建 span 元素展示
+            parts.forEach(part => {
+                if (!part) return;
+
+                const span = document.createElement('span');
+                span.className = 'colorful-text';
+                span.textContent = part;
+
+                // 为每个分隔符切换颜色
+                if (separators.includes(part)) {
+                    span.style.color = colors[colorIndex % colors.length];
+                    colorIndex++;
+                } else {
+                    span.style.color = colors[colorIndex % colors.length];
+                }
+
+                textDisplay.appendChild(span);
+            });
+
+            // 清除之前的延时任务并设置新的清空操作
+            clearTimeout(timeoutId);
+            timeout = 10;
+            timerDisplay.textContent = `倒计时：10 s`;
+            timeoutId = setTimeout(() => {
+                textInput.value = '';
+                textDisplay.innerHTML = '';
+                timerDisplay.textContent = '倒计时：-- s';
+            }, 10000);
+
+            // 开始倒计时
+            startCountdown();
+        });
+
+        // 初始化主题切换监听器
+        themeToggle.addEventListener('change', function () {
+            toggleTheme(!this.checked); // false 表示浅色模式，true 表示深色模式
+        });
+
+        // 默认加载为深色主题
+        toggleTheme(true);
+    </script>
+</body>
