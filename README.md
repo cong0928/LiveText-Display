@@ -1,2 +1,21 @@
-# LiveText-Display
-If the user stops typing for more than 10 seconds, the input field and the display area will be automatically cleared, and a countdown prompt will be shown.
+# 实时文字输入与展示界面
+
+这是一个简单的 HTML 页面，实现了以下功能：
+
+- **实时文字输入**：用户可以在文本框中输入文字。
+- **多彩文字展示**：根据预设的颜色数组，输入的文字会以不同的颜色展示。
+- **倒计时清空**：如果用户停止输入超过 10 秒，输入框和展示区将自动清空，并显示倒计时提示。
+
+## 预览
+![alt text](image-1.png)
+![alt text](image-2.png)
+## 使用方法
+
+1. 打开 index.html文件。
+2. 在文本框中输入文字（按回车可换行）。
+3. 等待 10 秒不输入，输入内容将自动清空。
+
+## 依赖项
+
+无需额外安装依赖，直接在浏览器中打开即可运行。
+
